@@ -52,6 +52,8 @@ public class FishermanJob implements Job {
         node.getNode("salary").setValue(20);
         node.getNode("sets").setValue(Arrays.asList(SETS));
 
-        new JobBasedRequirement("", 0, "totaleconomy.job.fisherman").addTo(node);
+        node.getNode("require", "job").setValue("");
+        node.getNode("require", "level").setValue(0);
+        node.getNode("require", "permission").setValue("totaleconomy.job.fisherman");
     }
 }

@@ -27,39 +27,51 @@ package com.erigitic.jobs;
 
 import com.google.common.reflect.TypeToken;
 import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class TEJob {
     private String name;
     private BigDecimal salary;
     private List<String> sets = new ArrayList<>();
-    private JobBasedRequirement requirement;
+    private List<JobBasedRequirement> requirements = new ArrayList<>();
 
     private boolean isValid = false;
 
     public TEJob(ConfigurationNode node) {
         name = node.getKey().toString();
-        salary = new BigDecimal(node.getNode("salary").getString());
+        salary = new BigDecimal(node.getNode("salary").getDouble(0));
 
         try {
             sets = node.getNode("sets").getList(TypeToken.of(String.class), new ArrayList<>());
             ConfigurationNode req = node.getNode("require");
 
             if (!req.isVirtual()) {
-                String job = req.getNode("job").getString(null);
-                int level = req.getNode("level").getInt(0);
-                String permission = req.getNode("permission").getString(null);
 
-                if (job != null && (job.trim().isEmpty())) {
-                    job = null;
+                if (req.getNode("job").isVirtual() && req.getNode("permission").isVirtual()) {
+
+                    for (Map.Entry<Object, ? extends ConfigurationNode> objectEntry : req.getChildrenMap().entrySet()) {
+
+                        JobBasedRequirement requirement = JobBasedRequirement.fromConfigNode(objectEntry.getValue());
+
+                        if (requirement != null) {
+                            requirements.add(requirement);
+                        }
+                    }
+
+                } else {
+
+                    JobBasedRequirement requirement = JobBasedRequirement.fromConfigNode(req);
+
+                    if (requirement != null) {
+                        requirements.add(requirement);
+                    }
+
                 }
-                
-                requirement = new JobBasedRequirement(job, level, permission);
             }
 
             isValid = true;
@@ -84,11 +96,46 @@ public class TEJob {
         return salary;
     }
 
-    public Optional<JobBasedRequirement> getRequirement() {
-        return Optional.ofNullable(requirement);
+    public List<JobBasedRequirement> getRequirements() {
+        return requirements;
     }
 
     public boolean isValid() {
         return isValid;
+    }
+
+    public void saveRequirements(ConfigurationNode node) {
+        if (requirements.isEmpty()) return;
+
+        if (requirements.size() > 1) {
+
+            JobBasedRequirement requirement = requirements.get(0);
+            if (requirement.getNeededJob() != null) {
+                node.getNode("job").setValue(requirement.getNeededJob());
+                node.getNode("level").setValue(requirement.getNeededJobLevel());
+            }
+
+            if (requirement.getNeededPermission() != null) {
+                node.getNode("permission").setValue(requirement.getNeededPermission());
+            }
+
+        } else {
+
+            for (int i = 0; i < requirements.size(); i++) {
+
+                JobBasedRequirement requirement = requirements.get(i);
+
+                if (requirement.getNeededJob() != null) {
+                    node.getNode(i+"", "job").setValue(requirement.getNeededJob());
+                    node.getNode(i+"", "level").setValue(requirement.getNeededJobLevel());
+                }
+
+                if (requirement.getNeededPermission() != null) {
+                    node.getNode(i+"", "permission").setValue(requirement.getNeededPermission());
+                }
+            }
+
+        }
+
     }
 }

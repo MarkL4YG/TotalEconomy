@@ -52,6 +52,8 @@ public class WarriorJob implements Job {
         node.getNode("salary").setValue(10);
         node.getNode("sets").setValue(Arrays.asList(SETS));
 
-        new JobBasedRequirement("", 0, "totaleconomy.job.warrior").addTo(node);
+        node.getNode("require", "job").setValue("");
+        node.getNode("require", "level").setValue(0);
+        node.getNode("require", "permission").setValue("totaleconomy.job.warrior");
     }
 }

@@ -43,6 +43,7 @@ import org.spongepowered.api.service.economy.Currency;
 import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.service.pagination.PaginationService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColor;
 import org.spongepowered.api.text.format.TextColors;
 
 import java.util.*;
@@ -136,22 +137,20 @@ public class JobCommand implements CommandExecutor {
             String jobName = args.getOne("jobName").get().toString().toLowerCase();
             User user = args.<User>getOne("user").get();
 
-            Optional<TEJob> optJob = totalEconomy.getJobManager().getJob(jobName, false);
+            Optional<TEJob> optJob = totalEconomy.getJobManager().getJob(jobName.toLowerCase(), false);
             if (!optJob.isPresent()) throw new CommandException(Text.of("Job " + jobName + " does not exist!"));
 
             TEJob job = optJob.get();
 
-            if (job.getRequirement().isPresent()) {
-                JobBasedRequirement req = job.getRequirement().get();
-
-                if (req.permissionNeeded() != null && !user.hasPermission(req.permissionNeeded())) {
+            for (JobBasedRequirement req : job.getRequirements()) {
+                if (req.getNeededPermission() != null && !user.hasPermission(req.getNeededPermission())) {
                     throw new CommandException(Text.of("Not permitted to join job \"", TextColors.GOLD, jobName, TextColors.RED, "\""));
                 }
 
-                if (req.jobNeeded() != null && req.jobLevelNeeded() > totalEconomy.getJobManager().getJobLevel(req.jobNeeded().toLowerCase(), user)) {
-                     throw new CommandException(Text.of("Insufficient level! Level ",
-                             TextColors.GOLD, req.jobLevelNeeded(), TextColors.RED," as a ",
-                             TextColors.GOLD, req.jobNeeded(), TextColors.RED, " required!"));
+                if (req.getNeededJob() != null && req.getNeededJobLevel() > totalEconomy.getJobManager().getJobLevel(req.getNeededJob().toLowerCase(), user)) {
+                    throw new CommandException(Text.of("Insufficient level! Level ",
+                        TextColors.GOLD, req.getNeededJobLevel(), TextColors.RED," as a ",
+                        TextColors.GOLD, req.getNeededJob(), TextColors.RED, " required!"));
                 }
             }
 
@@ -223,6 +222,34 @@ public class JobCommand implements CommandExecutor {
 
                     for (TEActionReward actionReward : jobSet.getActionRewards()) {
                         lines.add(Text.of(TextColors.GOLD, "[", jobManager.titleize(actionReward.getAction()), "] ", TextColors.GRAY, actionReward.getTargetID(), TextColors.GOLD, " (", actionReward.getExpReward(), " EXP) (", defaultCurrency.format(actionReward.getMoneyReward()), ")"));
+                    }
+                }
+            }
+
+            if (!optJob.get().getRequirements().isEmpty()) {
+                for (JobBasedRequirement req : optJob.get().getRequirements()) {
+                    TextColor color = TextColors.GRAY;
+
+                    if (req.getNeededJob() != null) {
+
+                        if (src instanceof Player) {
+                            // Display a color corresponding to the players status towards the requirement
+                            int level = jobManager.getJobLevel(req.getNeededJob(), ((Player) src));
+                            color = (level >= req.getNeededJobLevel() ? TextColors.GREEN : TextColors.RED);
+                        }
+
+                        lines.add(Text.of(TextColors.GOLD, "[Requires] Level ", color, req.getNeededJobLevel(),
+                            TextColors.GOLD, " as ", color, req.getNeededJob()));
+                    }
+
+                    if (req.getNeededPermission() != null) {
+
+                        if (src instanceof Player) {
+                            // Display a color corresponding to the players status towards the requirement
+                            color = (src.hasPermission(req.getNeededPermission()) ? TextColors.GREEN : TextColors.RED);
+                        }
+
+                        lines.add(Text.of(TextColors.GOLD , "[Requires] Permission ", color, '"', req.getNeededPermission(), '"'));
                     }
                 }
             }

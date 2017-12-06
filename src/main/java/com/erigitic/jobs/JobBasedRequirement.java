@@ -26,14 +26,47 @@
 package com.erigitic.jobs;
 
 import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.commented.SimpleCommentedConfigurationNode;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Requirement notation that is usable in various places such as higher job tiers
  */
 public class JobBasedRequirement {
-    private int reqJobLevel;
+
     private String reqJob;
+    private int reqJobLevel;
     private String reqPermission;
+
+    /**
+     * Build a new requirement representation from a ConfigurationNode
+     * {@code null} means the node cannot be interpreted as a requirement
+     * @return requirement|null
+     */
+    public static JobBasedRequirement fromConfigNode(ConfigurationNode node) {
+
+        String job = node.getNode("job").getString(null);
+        int level = node.getNode("level").getInt(0);
+        String permission = node.getNode("permission").getString(null);
+
+        if ((job != null && (job.trim().isEmpty()))
+            || level == 0) {
+            job = null;
+        }
+
+        if (permission != null && permission.trim().isEmpty()) {
+            permission = null;
+        }
+
+        // If any are set this requirement is valid
+        if (job != null || permission != null) {
+            return new JobBasedRequirement(job, level, permission);
+        }
+        // Requirement is invalid
+        return null;
+    }
 
     public JobBasedRequirement(String reqJob, int reqJobLevel, String reqPermission) {
         this.reqJob = reqJob;
@@ -41,22 +74,29 @@ public class JobBasedRequirement {
         this.reqPermission = reqPermission;
     }
 
-    public int jobLevelNeeded() {
+    public int getNeededJobLevel() {
         return reqJobLevel;
     }
 
-    public String jobNeeded() {
+    public String getNeededJob() {
         return reqJob;
     }
 
-    public String permissionNeeded() {
+    public String getNeededPermission() {
         return reqPermission;
     }
 
-    public void addTo(ConfigurationNode node) {
-        node = node.getNode("require");
-        node.getNode("job").setValue(reqJob);
-        node.getNode("level").setValue(reqJobLevel);
-        node.getNode("permission").setValue(reqPermission);
+    @Override
+    public String toString() {
+        // Construct a readable representation of this requirement
+        String s = "JBRequirement[";
+        if (reqJob != null) {
+            s += " job=" + reqJob + '@' + reqJobLevel;
+        }
+        if (reqPermission != null) {
+            s += " perm=" + reqPermission;
+        }
+        s += " ]";
+        return s;
     }
 }
