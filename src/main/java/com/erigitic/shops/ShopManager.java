@@ -43,7 +43,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.type.Exclude;
@@ -53,6 +53,7 @@ import org.spongepowered.api.item.inventory.*;
 import org.spongepowered.api.item.inventory.entity.Hotbar;
 import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
 import org.spongepowered.api.item.inventory.type.GridInventory;
+import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.blockray.BlockRay;
 import org.spongepowered.api.util.blockray.BlockRayHit;
@@ -119,7 +120,7 @@ public class ShopManager {
                             Collection<ItemStackSnapshot> rejectedItems = player.getInventory().query(GridInventory.class, Hotbar.class).offer(purchasedItem).getRejectedItems();
 
                             if (rejectedItems.size() == 0) {
-                                customerAccount.transfer(ownerAccount, totalEconomy.getDefaultCurrency(), BigDecimal.valueOf(shopItem.getPrice()), Cause.of(NamedCause.of("TotalEconomy", totalEconomy.getPluginContainer())));
+                                customerAccount.transfer(ownerAccount, totalEconomy.getDefaultCurrency(), BigDecimal.valueOf(shopItem.getPrice()), event.getCause());
 
                                 Slot clickedSlot = event.getTransactions().get(0).getSlot();
 
@@ -135,7 +136,8 @@ public class ShopManager {
                             player.sendMessage(messageManager.getMessage("shops.purchase.insufficientfunds"));
                         }
                     } else {
-                        event.getTransactions().get(0).setValid(false);
+                        event.getCursorTransaction().setValid(false);
+                        invalidateTransactions(event.getTransactions());
                     }
                 }
             }
@@ -161,10 +163,8 @@ public class ShopManager {
                 Optional<Shop> shopOpt = tileEntityOpt.get().get(ShopKeys.SINGLE_SHOP);
 
                 if (shopOpt.isPresent()) {
-                    // Cancel all of the slot transactions as we don't want the default behavior
-                    for (SlotTransaction slotTransaction : event.getTransactions()) {
-                        slotTransaction.setValid(false);
-                    }
+                    invalidateTransactions(event.getTransactions());
+                    event.setCancelled(true);
                 }
             }
         }
@@ -224,7 +224,7 @@ public class ShopManager {
                                     transaction.setCustom(ItemStack.empty());
                                 }
 
-                                customerAccount.transfer(ownerAccount, totalEconomy.getDefaultCurrency(), BigDecimal.valueOf(purchasedQuantity * shopItem.getPrice()), Cause.of(NamedCause.of("TotalEconomy", totalEconomy.getPluginContainer())));
+                                customerAccount.transfer(ownerAccount, totalEconomy.getDefaultCurrency(), BigDecimal.valueOf(purchasedQuantity * shopItem.getPrice()), event.getCause());
 
                                 player.getInventory().offer(purchasedItem);
                             } else {
@@ -233,10 +233,7 @@ public class ShopManager {
                                 player.sendMessage(messageManager.getMessage("shops.purchase.noroom"));
                             }
                         } else {
-                            for (SlotTransaction transaction : event.getTransactions()) {
-                                transaction.setValid(false);
-                            }
-
+                            invalidateTransactions(event.getTransactions());
                             player.sendMessage(messageManager.getMessage("shops.purchase.insufficientfunds"));
                         }
                     }
@@ -277,7 +274,7 @@ public class ShopManager {
      */
     @Listener
     public void onInventoryOpen(InteractInventoryEvent.Open event, @First Player player) {
-        Optional<BlockSnapshot> blockSnapshotOpt = event.getCause().get("HitTarget", BlockSnapshot.class);
+        Optional<BlockSnapshot> blockSnapshotOpt = event.getCause().getContext().get(EventContextKeys.BLOCK_HIT);
 
         if (blockSnapshotOpt.isPresent()) {
             BlockSnapshot blockSnapshot = blockSnapshotOpt.get();
@@ -332,8 +329,8 @@ public class ShopManager {
 
                     player.sendMessage(messageManager.getMessage("shops.remove.stocked"));
                 } else {
-                    event.getLocations().get(0).removeBlock(Cause.of(NamedCause.of("totaleconomy", totalEconomy.getPluginContainer())));
-                    event.getLocations().get(0).setBlockType(BlockTypes.CHEST, Cause.of(NamedCause.of("totaleconomy", totalEconomy.getPluginContainer())));
+                    event.getLocations().get(0).removeBlock();
+                    event.getLocations().get(0).setBlockType(BlockTypes.CHEST);
                 }
             }
         }
@@ -424,6 +421,12 @@ public class ShopManager {
 
     private void clearSlot(Slot slot) {
         slot.set(ItemStack.empty());
+    }
+
+    private void invalidateTransactions(List<SlotTransaction> transactions) {
+        for (SlotTransaction transaction : transactions) {
+            transaction.setValid(false);
+        }
     }
 
     /**

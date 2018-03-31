@@ -47,13 +47,15 @@ import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.action.FishingEvent;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.cause.EventContext;
+import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.item.inventory.ItemStack;
@@ -134,7 +136,15 @@ public class JobManager {
                     BigDecimal salary = optJob.get().getSalary();
                     TEAccount playerAccount = (TEAccount) accountManager.getOrCreateAccount(player.getUniqueId()).get();
 
-                    TransactionResult result = playerAccount.deposit(totalEconomy.getDefaultCurrency(), salary, Cause.of(NamedCause.of("TotalEconomy", totalEconomy.getPluginContainer())));
+                    EventContext eventContext = EventContext.builder()
+                            .add(EventContextKeys.PLAYER, player)
+                            .build();
+
+                    Cause cause = Cause.builder()
+                            .append(totalEconomy.getPluginContainer())
+                            .build(eventContext);
+
+                    TransactionResult result = playerAccount.deposit(totalEconomy.getDefaultCurrency(), salary, cause);
 
                     if (result.getResult() == ResultType.SUCCESS) {
                         Map<String, String> messageValues = new HashMap<>();
@@ -355,6 +365,21 @@ public class JobManager {
      */
     public String titleize(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
+    }
+
+    private boolean getNotificationState(UUID uuid) {
+        if (databaseEnabled) {
+            SQLQuery sqlQuery = SQLQuery.builder(sqlManager.dataSource)
+                    .select("job_notifications")
+                    .from("accounts")
+                    .where("uid")
+                    .equals(uuid.toString())
+                    .build();
+
+            return sqlQuery.getBoolean(totalEconomy.isJobNotificationEnabled());
+        }
+
+        return accountManager.getAccountConfig().getNode(uuid.toString(), "jobnotifications").getBoolean();
     }
 
     /**
@@ -737,7 +762,7 @@ public class JobManager {
 
                 if (reward.isPresent()) {
                     TEAccount playerAccount = (TEAccount) accountManager.getOrCreateAccount(player.getUniqueId()).get();
-                    boolean notify = accountManager.getJobNotificationState(player);
+                    boolean notify = getNotificationState(playerUUID);
                     int expAmount = reward.get().getExpReward();
                     BigDecimal payAmount = new BigDecimal(reward.get().getMoneyReward());
                     Currency currency = totalEconomy.getDefaultCurrency();
@@ -754,7 +779,7 @@ public class JobManager {
                     }
 
                     addExp(player, expAmount);
-                    playerAccount.deposit(currency, payAmount, Cause.of(NamedCause.of("TotalEconomy", totalEconomy.getPluginContainer())));
+                    playerAccount.deposit(currency, payAmount, event.getCause());
                     checkForLevel(player);
                 }
             }
@@ -830,8 +855,7 @@ public class JobManager {
 
                 if (reward.isPresent()) {
                     TEAccount playerAccount = (TEAccount) accountManager.getOrCreateAccount(player.getUniqueId()).get();
-                    ConfigurationNode accountConfig = accountManager.getAccountConfig();
-                    boolean notify = accountConfig.getNode(playerUUID.toString(), "jobnotifications").getBoolean();
+                    boolean notify = getNotificationState(playerUUID);
                     int expAmount = reward.get().getExpReward();
                     BigDecimal payAmount = new BigDecimal(reward.get().getMoneyReward());
                     Currency currency = totalEconomy.getDefaultCurrency();
@@ -848,7 +872,7 @@ public class JobManager {
                     }
 
                     addExp(player, expAmount);
-                    playerAccount.deposit(currency, payAmount, Cause.of(NamedCause.of("TotalEconomy", totalEconomy.getPluginContainer())));
+                    playerAccount.deposit(currency, payAmount, event.getCause());
                     checkForLevel(player);
                 }
             }
@@ -927,8 +951,7 @@ public class JobManager {
 
                     if (reward.isPresent()) {
                         TEAccount playerAccount = (TEAccount) accountManager.getOrCreateAccount(player.getUniqueId()).get();
-                        ConfigurationNode accountConfig = accountManager.getAccountConfig();
-                        boolean notify = accountConfig.getNode(playerUUID.toString(), "jobnotifications").getBoolean();
+                        boolean notify = getNotificationState(playerUUID);
                         int expAmount = reward.get().getExpReward();
                         BigDecimal payAmount = new BigDecimal(reward.get().getMoneyReward());
                         Currency currency = totalEconomy.getDefaultCurrency();
@@ -945,7 +968,7 @@ public class JobManager {
                         }
 
                         addExp(player, expAmount);
-                        playerAccount.deposit(currency, payAmount, Cause.of(NamedCause.of("TotalEconomy", totalEconomy.getPluginContainer())));
+                        playerAccount.deposit(currency, payAmount, event.getCause());
                         checkForLevel(player);
                     }
                 }
@@ -964,7 +987,7 @@ public class JobManager {
     public void onPlayerFish(FishingEvent.Stop event) {
         if (event.getCause().first(Player.class).isPresent()) {
             // no transaction, so execution can stop
-            if (event.getItemStackTransaction().size() == 0) {
+            if (event.getTransactions().size() == 0) {
                 return;
             }
 
@@ -1020,8 +1043,7 @@ public class JobManager {
 
                     if (reward.isPresent()) {
                         TEAccount playerAccount = (TEAccount) accountManager.getOrCreateAccount(player.getUniqueId()).get();
-                        ConfigurationNode accountConfig = accountManager.getAccountConfig();
-                        boolean notify = accountConfig.getNode(playerUUID.toString(), "jobnotifications").getBoolean();
+                        boolean notify = getNotificationState(playerUUID);
                         int expAmount = reward.get().getExpReward();
                         BigDecimal payAmount = new BigDecimal(reward.get().getMoneyReward());
                         Currency currency = totalEconomy.getDefaultCurrency();
@@ -1038,7 +1060,7 @@ public class JobManager {
                         }
 
                         addExp(player, expAmount);
-                        playerAccount.deposit(currency, payAmount, Cause.of(NamedCause.of("TotalEconomy", totalEconomy.getPluginContainer())));
+                        playerAccount.deposit(currency, payAmount, event.getCause());
                         checkForLevel(player);
                     }
                 }
