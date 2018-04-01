@@ -47,27 +47,24 @@ import org.spongepowered.api.data.manipulator.mutable.tileentity.SignData;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.User;
-import org.spongepowered.api.event.CauseStackManager;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.action.FishingEvent;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.block.tileentity.ChangeSignEvent;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.EventContext;
-import org.spongepowered.api.event.cause.EventContextKeys;
 import org.spongepowered.api.event.cause.entity.damage.source.EntityDamageSource;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.scheduler.Scheduler;
 import org.spongepowered.api.scheduler.Task;
+import org.spongepowered.api.service.economy.Currency;
 import org.spongepowered.api.service.economy.transaction.ResultType;
 import org.spongepowered.api.service.economy.transaction.TransactionResult;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
-import org.spongepowered.api.service.economy.Currency;
 import org.spongepowered.api.text.format.TextStyles;
 
 import java.io.File;
@@ -134,15 +131,11 @@ public class JobManager {
 
                 if (optJob.get().salaryEnabled()) {
                     BigDecimal salary = optJob.get().getSalary();
-                    TEAccount playerAccount = (TEAccount) accountManager.getOrCreateAccount(player.getUniqueId()).get();
-
-                    EventContext eventContext = EventContext.builder()
-                            .add(EventContextKeys.PLAYER, player)
-                            .build();
+                    TEAccount playerAccount = (TEAccount) accountManager.getOrCreateAccount(player.getUniqueId()).get();;
 
                     Cause cause = Cause.builder()
-                            .append(totalEconomy.getPluginContainer())
-                            .build(eventContext);
+                            .named("totaleconomy:salary", totalEconomy.getPluginContainer())
+                            .build();
 
                     TransactionResult result = playerAccount.deposit(totalEconomy.getDefaultCurrency(), salary, cause);
 
@@ -987,7 +980,7 @@ public class JobManager {
     public void onPlayerFish(FishingEvent.Stop event) {
         if (event.getCause().first(Player.class).isPresent()) {
             // no transaction, so execution can stop
-            if (event.getTransactions().size() == 0) {
+            if (event.getItemStackTransaction().size() == 0) {
                 return;
             }
 

@@ -52,8 +52,7 @@ import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.EventContext;
-import org.spongepowered.api.event.cause.EventContextKeys;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
@@ -254,9 +253,8 @@ public class ShopCommand implements CommandExecutor {
                                     TEAccount account = (TEAccount) accountManager.getOrCreateAccount(creatorUUID).get();
 
                                     Cause cause = Cause.builder()
-                                            .append(player)
-                                            .append(totalEconomy.getPluginContainer())
-                                            .build(EventContext.empty());
+                                                       .named(NamedCause.of("totaleconomy:fee.shop", totalEconomy.getPluginContainer()))
+                                                       .named(NamedCause.of("player", player)).build();
 
                                     TransactionResult transactionResult = account.withdraw(
                                             totalEconomy.getDefaultCurrency(),

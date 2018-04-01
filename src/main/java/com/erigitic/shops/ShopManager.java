@@ -34,7 +34,7 @@ import com.erigitic.util.MessageManager;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
-import org.spongepowered.api.block.tileentity.*;
+import org.spongepowered.api.block.tileentity.TileEntity;
 import org.spongepowered.api.block.tileentity.carrier.Chest;
 import org.spongepowered.api.data.DataContainer;
 import org.spongepowered.api.data.DataQuery;
@@ -43,25 +43,31 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.EventContextKeys;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.type.Exclude;
 import org.spongepowered.api.event.item.inventory.ClickInventoryEvent;
 import org.spongepowered.api.event.item.inventory.InteractInventoryEvent;
-import org.spongepowered.api.item.inventory.*;
+import org.spongepowered.api.item.inventory.Inventory;
+import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.ItemStackSnapshot;
+import org.spongepowered.api.item.inventory.Slot;
 import org.spongepowered.api.item.inventory.entity.Hotbar;
 import org.spongepowered.api.item.inventory.transaction.SlotTransaction;
 import org.spongepowered.api.item.inventory.type.GridInventory;
-import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.Direction;
 import org.spongepowered.api.util.blockray.BlockRay;
 import org.spongepowered.api.util.blockray.BlockRayHit;
+import org.spongepowered.api.world.BlockChangeFlag;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public class ShopManager {
 
@@ -274,7 +280,7 @@ public class ShopManager {
      */
     @Listener
     public void onInventoryOpen(InteractInventoryEvent.Open event, @First Player player) {
-        Optional<BlockSnapshot> blockSnapshotOpt = event.getCause().getContext().get(EventContextKeys.BLOCK_HIT);
+        Optional<BlockSnapshot> blockSnapshotOpt = ((Optional<BlockSnapshot>) ((Object) event.getTargetInventory()));
 
         if (blockSnapshotOpt.isPresent()) {
             BlockSnapshot blockSnapshot = blockSnapshotOpt.get();
@@ -329,8 +335,10 @@ public class ShopManager {
 
                     player.sendMessage(messageManager.getMessage("shops.remove.stocked"));
                 } else {
-                    event.getLocations().get(0).removeBlock();
-                    event.getLocations().get(0).setBlockType(BlockTypes.CHEST);
+
+                    Cause cause = Cause.of(NamedCause.of("totaleconomy:removeshop", totalEconomy.getPluginContainer()));
+                    event.getLocations().get(0).removeBlock(cause);
+                    event.getLocations().get(0).setBlockType(BlockTypes.CHEST, BlockChangeFlag.NONE, cause);
                 }
             }
         }

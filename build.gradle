@@ -9,7 +9,8 @@ repositories {
 apply plugin: 'java'
 
 dependencies {
-    compile 'org.spongepowered:spongeapi:6.1.0'
+    // Yes, the latest stable has such a weird build number.
+    compile 'org.spongepowered:spongeapi:6.1.0-20170814.171949-4'
 }
 
 jar {

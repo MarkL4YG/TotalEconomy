@@ -37,7 +37,7 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.EventContext;
+import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.service.economy.Currency;
 import org.spongepowered.api.service.economy.transaction.ResultType;
 import org.spongepowered.api.service.economy.transaction.TransactionResult;
@@ -91,9 +91,7 @@ public class ViewBalanceCommand implements CommandExecutor {
      * @throws CommandException
      */
     private TransactionResult getTransactionResult(TEAccount recipientAccount, Optional<String> optCurrencyName) throws CommandException {
-        Cause cause = Cause.builder()
-                .append(totalEconomy.getPluginContainer())
-                .build(EventContext.empty());
+        Cause cause = Cause.of(NamedCause.of("totaleconomy:viewbalance", totalEconomy.getPluginContainer()));
 
         if (optCurrencyName.isPresent()) {
             Optional<Currency> optCurrency = totalEconomy.getTECurrencyRegistryModule().getById("totaleconomy:" + optCurrencyName.get().toLowerCase());
