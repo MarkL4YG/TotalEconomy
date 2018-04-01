@@ -288,6 +288,8 @@ public class ShopCommand implements CommandExecutor {
                         throw new CommandException(messageManager.getMessage("command.shop.buy.alreadypurchased"));
                     }
                 }
+            } else { // PlayerRayCast failed to find a block
+                throw new CommandException(messageManager.getMessage("command.shop.buy.noblock"));
             }
 
             return CommandResult.success();

@@ -280,7 +280,8 @@ public class ShopManager {
      */
     @Listener
     public void onInventoryOpen(InteractInventoryEvent.Open event, @First Player player) {
-        Optional<BlockSnapshot> blockSnapshotOpt = ((Optional<BlockSnapshot>) ((Object) event.getTargetInventory()));
+
+        Optional<BlockSnapshot> blockSnapshotOpt = event.getCause().get("HitTarget", BlockSnapshot.class);
 
         if (blockSnapshotOpt.isPresent()) {
             BlockSnapshot blockSnapshot = blockSnapshotOpt.get();
