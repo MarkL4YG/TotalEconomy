@@ -3,6 +3,10 @@ package com.erigitic.jobs.actions;
 import com.erigitic.jobs.TEActionReward;
 import com.erigitic.main.TotalEconomy;
 import ninja.leaping.configurate.ConfigurationNode;
+import org.spongepowered.api.data.key.Key;
+import org.spongepowered.api.util.generator.dummy.DummyObjectProvider;
+
+import java.util.Objects;
 
 public class ActionFactory {
 
@@ -42,6 +46,23 @@ public class ActionFactory {
         return new TEKillAction(createReward(node));
     }
 
+    public static TECraftAction<?, ?> createCraftAction(ConfigurationNode node) {
+        String identifier = (String) node.getKey();
+        final TEActionReward baseReward = createReward(node);
+        ConfigurationNode keyName = getAlternativeNode(node, "id-key", "idKey");
+
+        Key key = null;
+        String keyStr = keyName.getString(null);
+        if (!keyName.isVirtual()) {
+            Objects.requireNonNull(keyStr, "Item key may only be a string!");
+            key = DummyObjectProvider.createFor(Key.class, keyStr);
+        }
+
+        TECraftAction action = new TECraftAction(baseReward, key);
+        addKeyRewards(node, key, action);
+        return action;
+    }
+
     public static void setPlugin(TotalEconomy totalEconomy) {
         ActionFactory.plugin = totalEconomy;
     }
@@ -68,6 +89,12 @@ public class ActionFactory {
                 final String traitValue = (String) key;
                 action.addRewardForTraitValue(traitValue, createReward(value));
             });
+        }
+    }
+
+    private static void addKeyRewards(ConfigurationNode actionNode, Key key, TECraftAction action) {
+        if (key != null) {
+
         }
     }
 }

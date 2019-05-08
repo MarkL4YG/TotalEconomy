@@ -25,14 +25,7 @@
 
 package com.erigitic.main;
 
-import com.erigitic.commands.AdminPayCommand;
-import com.erigitic.commands.BalanceCommand;
-import com.erigitic.commands.BalanceTopCommand;
-import com.erigitic.commands.JobCommand;
-import com.erigitic.commands.PayCommand;
-import com.erigitic.commands.SetBalanceCommand;
-import com.erigitic.commands.ShopCommand;
-import com.erigitic.commands.ViewBalanceCommand;
+import com.erigitic.commands.*;
 import com.erigitic.config.AccountManager;
 import com.erigitic.config.TECurrency;
 import com.erigitic.config.TECurrencyRegistryModule;
@@ -306,6 +299,7 @@ public class TotalEconomy {
      * Create commands and registers them with the CommandManager.
      */
     private void registerCommands() {
+        game.getCommandManager().register(this, TestSerializeCommand.getCommandSpec(), "showmeta");
         game.getCommandManager().register(this, AdminPayCommand.commandSpec(), "adminpay");
         game.getCommandManager().register(this, BalanceCommand.commandSpec(), "balance", "bal", "money");
         game.getCommandManager().register(this, BalanceTopCommand.commandSpec(), "balancetop", "baltop");

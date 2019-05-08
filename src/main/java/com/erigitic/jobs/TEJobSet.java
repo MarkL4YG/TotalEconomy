@@ -25,10 +25,7 @@
 
 package com.erigitic.jobs;
 
-import com.erigitic.jobs.actions.AbstractBlockAction;
-import com.erigitic.jobs.actions.ActionFactory;
-import com.erigitic.jobs.actions.TEFishAction;
-import com.erigitic.jobs.actions.TEKillAction;
+import com.erigitic.jobs.actions.*;
 import ninja.leaping.configurate.ConfigurationNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +42,7 @@ public class TEJobSet {
     private final Map<String, AbstractBlockAction> placeActions = new HashMap<>();
     private final Map<String, TEFishAction> fishActions = new HashMap<>();
     private final Map<String, TEKillAction> killActions = new HashMap<>();
+    private final Map<String, TECraftAction<?, ?>> craftActions = new HashMap<>();
 
     public TEJobSet(ConfigurationNode node) {
         node.getChildrenMap().forEach((actionStr, targetNode) -> {
@@ -65,6 +63,10 @@ public class TEJobSet {
 
                     case "kill":
                         registerKillActions(targetNode);
+                        break;
+
+                    case "craft":
+                        registerCraftActions(targetNode);
                         break;
 
                     default:
@@ -102,6 +104,13 @@ public class TEJobSet {
         });
     }
 
+    private void registerCraftActions(ConfigurationNode actioNodes) {
+        actioNodes.getChildrenMap().forEach((key, value) -> {
+            final String itemIdentifier = (String) key;
+            craftActions.put(itemIdentifier, ActionFactory.createCraftAction(value));
+        });
+    }
+
     public Optional<AbstractBlockAction> getBreakAction(String blockId, String blockName) {
         AbstractBlockAction action = breakActions.getOrDefault(blockId, null);
         action = action != null ? action : breakActions.getOrDefault(blockName, null);
@@ -127,6 +136,12 @@ public class TEJobSet {
         return Optional.ofNullable(action);
     }
 
+    public Optional<TECraftAction> getCraftAction(String craftedId, String craftedName) {
+        TECraftAction action = craftActions.getOrDefault(craftedId, null);
+        action = action != null ? action : craftActions.getOrDefault(craftedName, null);
+        return Optional.ofNullable(action);
+    }
+
     public Map<String, AbstractBlockAction> getBreakActions() {
         return breakActions;
     }
@@ -141,6 +156,10 @@ public class TEJobSet {
 
     public Map<String, TEKillAction> getKillActions() {
         return killActions;
+    }
+
+    public Map<String, TECraftAction<?, ?>> getCraftActions() {
+        return craftActions;
     }
 
     public List<Text> getActionListAsText() {

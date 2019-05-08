@@ -27,10 +27,7 @@ package com.erigitic.jobs;
 
 import com.erigitic.config.AccountManager;
 import com.erigitic.config.TEAccount;
-import com.erigitic.jobs.watcher.TEBreakBlockWatcher;
-import com.erigitic.jobs.watcher.TEFishWatcher;
-import com.erigitic.jobs.watcher.TEKillWatcher;
-import com.erigitic.jobs.watcher.TEPlaceBlockWatcher;
+import com.erigitic.jobs.watcher.*;
 import com.erigitic.main.TotalEconomy;
 import com.erigitic.sql.SqlManager;
 import com.erigitic.sql.SqlQuery;
@@ -70,6 +67,7 @@ import java.util.concurrent.TimeUnit;
 
 public class JobManager {
 
+    private final TECraftWatcher craftWatcher;
     private TotalEconomy totalEconomy;
     private AccountManager accountManager;
     private MessageManager messageManager;
@@ -116,6 +114,7 @@ public class JobManager {
         blockPlaceWatcher = new TEPlaceBlockWatcher(totalEconomy);
         fishWatcher = new TEFishWatcher(totalEconomy);
         killWatcher = new TEKillWatcher(totalEconomy);
+        craftWatcher = new TECraftWatcher(totalEconomy);
     }
 
     public void registerListers() {
@@ -123,6 +122,7 @@ public class JobManager {
         Sponge.getEventManager().registerListeners(totalEconomy, blockPlaceWatcher);
         Sponge.getEventManager().registerListeners(totalEconomy, fishWatcher);
         Sponge.getEventManager().registerListeners(totalEconomy, killWatcher);
+        Sponge.getEventManager().registerListeners(totalEconomy, craftWatcher);
     }
 
     /**
